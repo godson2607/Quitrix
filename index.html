@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUTRIX-2K25</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+            color: #333;
+            position: relative;
+        }
+        #background-video {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -100;
+            background-size: cover;
+        }
+        .content {
+            position: relative;
+            z-index: 100;
+        }
+        #quiz-title {
+            color: #fff;
+            font-size: 3em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px #000000;
+        }
+        #quiz-subtitle {
+            color: #fff;
+            font-size: 1.5em;
+            margin-top: 0;
+            text-shadow: 1px 1px 2px #000000;
+        }
+        #quiz-container {
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        #question {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            text-align: left;
+            white-space: pre-wrap;
+            color: #000;
+        }
+        #options button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            font-size: 1em;
+            text-align: left;
+            color: #333;
+        }
+        #options button:hover {
+            background-color: #e0e0e0;
+        }
+        #options button.selected {
+            background-color: #007bff;
+            color: #fff;
+            border-color: #007bff;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #28a745;
+            color: white;
+            margin-top: 20px;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #start-btn, #register-btn, #rules-btn, #end-btn {
+            background-color: #007bff;
+            color: white;
+            margin: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+        }
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-btn:hover,
+        .close-btn:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <video autoplay muted loop id="background-video">
+        <source src="/static/background.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <h1 id="quiz-title" class="content">QUTRIX-2K25</h1>
+    <h2 id="quiz-subtitle" class="content">SOFTWARE CONTEST PRELIMS</h2>
+
+    <div id="main-menu" class="content">
+        <button id="register-btn" onclick="showRegister()">Register</button>
+        <button id="rules-btn" onclick="showRules()">Rules</button>
+        <button id="start-btn" class="hidden" onclick="startQuiz()">Start Quiz</button>
+    </div>
+
+    <div id="quiz-container" class="hidden content"></div>
+    
+    <div id="rules-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeRules()">&times;</span>
+            <h2>Quiz Rules</h2>
+            <ul>
+                <li>There are 25 questions in total.</li>
+                <li>Each question has four options, with only one correct answer.</li>
+                <li>You can navigate between questions using "Previous" and "Next" buttons.</li>
+                <li>Once you have answered all questions and click "End Quiz", your score will be submitted.</li>
+                <li>Your score and time taken will be stored in the database.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="register-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeRegister()">&times;</span>
+            <h2>Participant Registration</h2>
+            <form id="registration-form" onsubmit="event.preventDefault(); register();">
+                <label for="rollno1">Participant 1 Roll No:</label><br>
+                <input type="text" id="rollno1" name="rollno1" required><br><br>
+                <label for="name1">Participant 1 Name:</label><br>
+                <input type="text" id="name1" name="name1" required><br><br>
+                <label for="college1">Participant 1 College Name:</label><br>
+                <input type="text" id="college1" name="college1" required><br><br>
+
+                <label for="rollno2">Participant 2 Roll No:</label><br>
+                <input type="text" id="rollno2" name="rollno2"><br><br>
+                <label for="name2">Participant 2 Name:</label><br>
+                <input type="text" id="name2" name="name2"><br><br>
+                <label for="college2">Participant 2 College Name:</label><br>
+                <input type="text" id="college2" name="college2"><br><br>
+
+                <button type="submit">Register</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        const questions = [
+            {
+                question: "1. We cannot use the keyword 'break' simply within ________.",
+                choices: ["while", "for", "if-else", "do-while"],
+                correctAnswer: 2
+            },
+            {
+                question: "2. The C-preprocessors are specified with______Symbol",
+                choices: ["#", "$", "*", "&"],
+                correctAnswer: 0
+            },
+            {
+                question: "3. What is meant by ‘a’ in the following C operation?\nfp=fopen(\"Random.text\", \"a\");",
+                choices: ["Attach", "Append", "Apprehend", "Add"],
+                correctAnswer: 1
+            },
+            {
+                question: "4. What will be the value of the following assignment expression?\n(x=foo())!=1 considering foo() returns 2",
+                choices: ["2", "True", "1", "0"],
+                correctAnswer: 0
+            },
+            {
+                question: "5*. What does the following output? \n #include&lt;stdio.h&gt; \n enum birds{SPARROW, PEACOCK, PARROT}; \n enum animals{TIGER=8, LION, RABBIT}; \n int main() {\n    enum birds m = TIGER; \n    int k; \n    k=m; \n    printf(\"%d\",k); \n    return 0; \n} ",
+                choices: ["0", "5", "8", "Compile time error"],
+                correctAnswer: 2
+            },
+            {
+                question: "6. Which function computes the exponential function of x ",
+                choices: ["exp(x)", "frexp(x)", "frexp x", "exp x"],
+                correctAnswer: 0
+            },
+            {
+                question: "7. Which of the following is not a valid predefined object in C++?",
+                choices: ["cin","cout", "cput","cerr"],
+                correctAnswer: 2
+            },
+            {
+                question: "8. An array occupies memory space  in ?",
+                choices: ["contiguous manner", "fragmented manner", "linked list ", "None"],
+                correctAnswer: 0
+            },
+            {
+                question: "9. Which type of memory is allocated using dynamic memory allocation? ",
+                choices: ["stack", "heap", "static", "program code"],
+                correctAnswer: 1
+            },
+            {
+                question: "10. Which of the following function can be used to find the length of a C-style String?",
+                choices: ["size()", "length()", "strlen()", "strlength()"],
+                correctAnswer: 2
+            },
+            {
+                question: "11*. What does the  following output? \n #include&lt;iostream&gt; \n using namespace std; \n int main()  {\n int a=10; \n int b=a++*2;\n cout&lt;&lt;a&lt;&lt;\" \"&lt;&lt;b; \n return 0; \n } ",
+                choices: ["10 20", "11 20", "11 22", "10 22"],
+                correctAnswer: 1
+            },    
+            {
+                question: "12. Which of the following is the correct syntax for declaring  a pointer in C++? ",
+                choices: ["int ptx;", "int*ptr;", "int&ptr;", "int ptr*;"],
+                correctAnswer: 1
+            },    
+            {
+                question: "13. Which of the following is not a core datatype in python programming? ",
+                choices: ["Tuple", "List", "Class", "Dictionary"],
+                correctAnswer: 2
+            },    
+            {
+                question: "14. Which of the following is mutable data type in python? ",
+                choices: ["String", "Tuple", "List", "Integer"],
+                correctAnswer: 2
+            },    
+            {
+                question: "15*. Whats is the output of print(math.pow(3,2))? ",
+                choices: ["9.0", "None", "9", "6"],
+                correctAnswer: 0
+            },    
+            {
+                question: "16. Python supports the creation of anonymous function at runtime,using a construct called____  ",
+                choices: ["pi", "anonymous", "lambda", "None of these"],
+                correctAnswer: 2
+            },    
+            {
+                question: "17. Which of the following is the truncation division operator in python? ",
+                choices: ["/", "|", "//", "%"],
+                correctAnswer: 2
+            },    
+            {
+                question: "18. Why does the name of the local variables start with an  underscore discouraged? ",
+                choices: ["To identify the variable,", "It confuse the interpreter,", "It indicates a private variable of a class", "None of these"],
+                correctAnswer: 2
+            },    
+            {
+                question: "19*. What is the output? \n from math import * \n a=2.13 \n b=3.7777 \n c=-3.12 \n  print(int(a) ,floor (b) ,ceil(c)) ",
+                choices: ["2 3 -4 ", "2 3 -3", "2 4 -3", "3 4 -3"],
+                correctAnswer: 1
+            },    
+            {
+                question: "20*. What will be the output of this code? \n print(2 ** 3 ** 2)",
+                choices: ["1024", "256","128", "512"],
+                correctAnswer: 3
+            },    
+            {
+                question: "21. Which method  is used to find the length of a string in Java?",
+                choices: ["length()", "size()","getlength()", "getsize()"],
+                correctAnswer: 0
+            },    
+            {
+                question: "22. How do you declare an array of integers in Java? ",
+                choices: ["int[] arr;","int arr[];", "int arr[]=new int[10];","All of the above"],
+                correctAnswer: 3
+            },    
+            {
+                question: "23. _______ is used to find and fix bugs in the java program.",
+                choices: ["JVM", "JRE", "JDK", "JDB"],
+                correctAnswer: 3
+            },    
+            {
+                question: "24. What does the expression float a=35/0 return?",
+                choices: ["0", "Not a  Number", "Infinity", "Run time exception"],
+                correctAnswer: 2
+            },    
+            {
+                question: "25. Evaluate the following java expression , \n if x=3,y=5 and z=10: \n ++z + y - y + z + x++",
+                choices: ["24", "23", "20", "25"],
+                correctAnswer: 3
+            },
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let selectedAnswers = Array(questions.length).fill(null);
+        let startTime, endTime;
+        let userData = {
+            rollno1: '',
+            name1: '',
+            college1: '',
+            rollno2: '',
+            name2: '',
+            college2: ''
+        };
+
+        function startQuiz() {
+            document.getElementById('quiz-title').classList.add('hidden');
+            document.getElementById('quiz-subtitle').classList.add('hidden');
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('quiz-container').classList.remove('hidden');
+            startTime = Date.now();
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const questionContainer = document.getElementById('quiz-container');
+            
+            const questionText = questions[currentQuestionIndex].question.split('\n').map(line => `<div>${line}</div>`).join('');
+
+            questionContainer.innerHTML = `
+                <div id="question">${questionText}</div>
+                <div id="options">
+                    ${questions[currentQuestionIndex].choices.map((choice, index) => `
+                        <button id="option-${index}" 
+                            onclick="selectAnswer(${index})" 
+                            class="${selectedAnswers[currentQuestionIndex] === index ? 'selected' : ''}">
+                            ${choice}
+                        </button>
+                    `).join('')}
+                </div>
+                <button onclick="previousQuestion()" ${currentQuestionIndex === 0 ? 'disabled' : ''}>Previous</button>
+                <button id="next-btn" onclick="nextQuestion()">Next</button>
+            `;
+
+            if (currentQuestionIndex === questions.length - 1) {
+                document.getElementById('next-btn').style.display = 'none';
+                const endButton = document.createElement('button');
+                endButton.textContent = 'End Quiz';
+                endButton.onclick = endQuiz;
+                questionContainer.appendChild(endButton);
+            }
+        }
+
+        function selectAnswer(index) {
+            selectedAnswers[currentQuestionIndex] = index;
+            
+            document.querySelectorAll('#options button').forEach(button => {
+                button.classList.remove('selected');
+            });
+            document.getElementById(`option-${index}`).classList.add('selected');
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                showQuestion();
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                showQuestion();
+            }
+        }
+
+        function endQuiz() {
+            endTime = Date.now();
+            
+            score = 0;
+            const userAnswers = [];
+            for (let i = 0; i < questions.length; i++) {
+                const selected = selectedAnswers[i];
+                if (selected !== null && selected === questions[i].correctAnswer) {
+                    score++;
+                }
+                userAnswers.push(selected !== null ? questions[i].choices[selected] : 'Not Answered');
+            }
+
+            const elapsedTime = Math.round((endTime - startTime) / 1000);
+            
+            const resultData = {
+                rollno1: userData.rollno1,
+                name1: userData.name1,
+                college1: userData.college1,
+                rollno2: userData.rollno2,
+                name2: userData.name2,
+                college2: userData.college2,
+                score: score,
+                elapsedTime: elapsedTime,
+                answers: userAnswers
+            };
+            
+            fetch('/save-result', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(resultData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Result saved successfully') {
+                    alert(`Quiz Ended! Your score has been saved.`);
+                } else {
+                    alert(`Quiz Ended! Failed to save score: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Quiz Ended! An error occurred while saving the score.');
+            });
+            
+            document.getElementById('quiz-container').innerHTML = `
+                <h1>Quiz Ended</h1>
+                <p>Thank you for participating! Your score was ${score} out of ${questions.length}.</p>
+            `;
+        }
+
+        function showRules() {
+            document.getElementById('rules-modal').style.display = 'flex';
+        }
+
+        function closeRules() {
+            document.getElementById('rules-modal').style.display = 'none';
+        }
+
+        function showRegister() {
+            document.getElementById('register-modal').style.display = 'flex';
+        }
+
+        function closeRegister() {
+            document.getElementById('register-modal').style.display = 'none';
+        }
+
+        function register() {
+            userData.rollno1 = document.getElementById('rollno1').value;
+            userData.name1 = document.getElementById('name1').value;
+            userData.college1 = document.getElementById('college1').value;
+            userData.rollno2 = document.getElementById('rollno2').value;
+            userData.name2 = document.getElementById('name2').value;
+            userData.college2 = document.getElementById('college2').value;
+
+            document.getElementById('register-modal').style.display = 'none';
+            document.getElementById('register-btn').classList.add('hidden');
+            document.getElementById('start-btn').classList.remove('hidden');
+            alert("Registration complete. You can now start the quiz.");
+        }
+    </script>
+</body>
+</html>
